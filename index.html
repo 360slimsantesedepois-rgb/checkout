@@ -2,6 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pagamento Seguro - Agência CW</title>
 
     <script>
@@ -9,11 +10,18 @@
     fbq('init', '26659273070332798');
     fbq('track', 'PageView');
     </script>
+
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #ffffff; }
+        iframe { width: 100%; height: 100vh; border: none; display: block; }
+    </style>
 </head>
-<body style="margin:0;padding:0;overflow:hidden;">
-    <iframe id="tally-iframe" style="width:100%; height:100vh; border:none;"></iframe>
+<body>
+
+    <iframe id="tally-iframe" src="about:blank"></iframe>
 
     <script>
+        // Função para caçar o cookie real do Facebook
         function getCookie(name) {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
@@ -26,16 +34,15 @@
             const valor = urlParams.get('valor') || '';
             const fbclid = urlParams.get('fbclid') || '';
             
-            // FBC Real ou Identificador de Origem
+            // FBC Real (se vier de anúncio) ou identificador de WhatsApp
             const fbc = fbclid ? `fb.1.${Date.now()}.${fbclid}` : `fb.1.${Date.now()}.whatsapp_direct`;
 
-            // Captura do FBP Real (Tenta ler 3 vezes com intervalo se estiver vazio)
-            let fbp = getCookie('_fbp');
-            let tentativas = 0;
-            while (!fbp && tentativas < 5) {
-                await new Promise(r => setTimeout(r, 800));
+            // BUSCA PELO FBP REAL: Ele tenta ler o cookie 5 vezes
+            let fbp = "";
+            for (let i = 0; i < 5; i++) {
                 fbp = getCookie('_fbp');
-                tentativas++;
+                if (fbp) break; 
+                await new Promise(r => setTimeout(r, 600)); // Espera o Pixel "escrever" o cookie
             }
 
             const ua = navigator.userAgent.substring(0, 150);
@@ -44,15 +51,20 @@
                 const res = await fetch('https://api.ipify.org?format=json');
                 const data = await res.json();
                 ip = data.ip;
-            } catch (e) { ip = ''; }
+            } catch (e) { ip = ""; }
 
             const tallyID = "MedLeX";
             const finalURL = `https://tally.so/r/${tallyID}?valor=${valor}&fbc=${fbc}&fbp=${fbp}&ip=${ip}&ua=${encodeURIComponent(ua)}`;
             
-            document.getElementById('tally-iframe').src = finalURL;
+            // Aqui estava o erro: agora garantimos que o elemento existe antes de preencher
+            const iframe = document.getElementById('tally-iframe');
+            if (iframe) {
+                iframe.src = finalURL;
+            }
         }
 
-        carregarTally();
+        // DISPARO SEGURO: Só roda quando o HTML estiver todo na tela
+        window.onload = carregarTally;
     </script>
 </body>
 </html>
