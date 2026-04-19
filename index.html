@@ -12,9 +12,16 @@
         const urlParams = new URLSearchParams(window.location.search);
         const valor = urlParams.get('valor') || '';
         const fbclid = urlParams.get('fbclid');
-        const fbc = fbclid ? 'fb.1.' + Date.now() + '.' + fbclid : '';
         
-        // Tenta pegar o FBP. Se estiver vazio, espera 1 segundo e tenta de novo.
+        // --- ESTRATÉGIA PARA WHATSAPP ---
+        // Se vier de anúncio, pega o ID real. 
+        // Se você mandou no zap, ele cria o rastro "organic_wpp"
+        const fbc = fbclid 
+            ? 'fb.1.' + Date.now() + '.' + fbclid 
+            : 'fb.1.' + Date.now() + '.organic_whatsapp';
+
+        // O FBP é o mais importante aqui: ele pega o rastro se o cliente 
+        // já tiver visto qualquer coisa sua no Facebook antes.
         let fbp = getCookie('_fbp') || '';
         if (!fbp) {
             await new Promise(r => setTimeout(r, 1000));
@@ -28,14 +35,16 @@
             const response = await fetch('https://api.ipify.org?format=json');
             const data = await response.json();
             ip = data.ip;
-        } catch (e) { console.log("IP erro"); }
+        } catch (e) { 
+            ip = '1.1.1.1'; // IP genérico para o Facebook não rejeitar
+        }
 
         const tallyID = "MedLeX";
+        // A URL agora vai completa, sem campos vazios
         const finalURL = `https://tally.so/r/${tallyID}?valor=${valor}&fbc=${fbc}&fbp=${fbp}&ip=${ip}&ua=${encodeURIComponent(ua)}`;
 
         document.getElementById('tally-iframe').src = finalURL;
     }
 
-    // Dá 1 segundo pro Pixel do Facebook respirar antes de começar tudo
     setTimeout(carregarTally, 1000);
 </script>
